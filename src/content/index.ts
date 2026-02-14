@@ -12,7 +12,7 @@ import { applyFilteringToDOM } from "./renderer";
  */
 async function initializeMenuFiltering(): Promise<void> {
   // メニューコンテナを取得
-  const menuContainer = document.querySelector("main.pg-mypage-choice --menu-page") as HTMLElement | null;
+  const menuContainer = document.querySelector("main.pg-mypage-choice.--menu-page") as HTMLElement | null;
 
   if (!menuContainer) {
     console.warn("[Nosh Extension] メニューコンテナが見つかりません");
