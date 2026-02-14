@@ -20,15 +20,14 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://nosh.jp/*"],
-      "js": ["src/content/index.ts"],
+      "matches": [
+        "https://nosh.jp/*"
+      ],
+      "js": [
+        "src/content/index.ts"
+      ],
       "run_at": "document_end"
     }
   ],
-  "options_page": "src/ui/options.html",
-  "icons": {
-    "16": "src/assets/icon-16.png",
-    "48": "src/assets/icon-48.png",
-    "128": "src/assets/icon-128.png"
-  }
+  "options_page": "src/ui/options.html"
 }
