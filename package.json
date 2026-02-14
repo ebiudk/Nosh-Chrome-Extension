@@ -7,8 +7,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "build": "tsc",
-    "dev": "tsc --watch"
+    "build": "node build.js",
+    "dev": "node build.js --watch"
   },
   "keywords": [
     "chrome",
@@ -23,6 +23,7 @@
     "@types/chrome": "^0.1.36",
     "@types/jest": "^29.5.12",
     "@types/node": "^22.1.0",
+    "esbuild": "^0.27.3",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "ts-jest": "^29.1.3",
