@@ -1,0 +1,86 @@
+Nosh Chrome Extension — アーキテクチャ設計
+
+目的
+- 学内/社内の「Nosh」メニュー選びをユーザーの好みや制約でフィルタリング・推薦するChrome拡張。
+- 最小限はブラウザ内完結で、必要に応じて（ユーザー同意の上）外部API/LLMを利用するオプションを用意する。
+
+設計原則
+- 単一責務（SRP）：各モジュールは明確な責務のみを持つ。
+- ローカル優先：プライバシーのため、可能な限りフィルタ・ルールはローカルで実行。
+- 拡張性：LLMやクラウド連携はオプション機能として明確に分離。
+
+主要コンポーネント
+1) Manifest (manifest.json)
+   - MV3 (service worker)、必要な権限のみ指定（activeTab, storage, scripting, host permissions for nosh site）
+
+2) Content Script
+   - 役割：Nosh のページ DOM を読み取り、メニューアイテムを抽出してフィルタリング結果を適用（非表示/ハイライト/注釈）
+   - 実装：ページ固有のセレクタと抽象化されたパーサレイヤ（selectors + normalizer）
+   - メッセージ：Service Worker / Popup と通信し、現在のフィルタ設定やルールを照会
+
+3) Service Worker (Background)
+   - 役割：持続的な状態管理（ストレージ操作）、外部API/LLM呼び出しの仲介、タスクスケジューリング
+   - セキュリティ：外部通信はユーザー設定で無効化可能
+
+4) Popup / Options UI
+   - 役割：フィルタルールの作成・編集、プリセット、優先度設定、プライバシー設定（LLM利用のON/OFF）
+   - 保存：`chrome.storage.local`（暗号化オプションは将来検討）
+
+5) Filter Engine
+   - ルールベースコア：タグ（例：肉、魚、ベジタリアン）、除外ワード、アレルゲン除外などのマッチングを高速に実行
+   - 拡張：スコアリングと優先度（ユーザーの過去選択に基づく重み付け）
+   - LLMアシスト（任意）：メニュー項目の意味解釈（複合メニューの分類など）や自然言語ルール変換
+
+6) Optional: LLM/Cloud Adapter
+   - 役割：サーバー経由でモデルに問い合わせ（例：メニューの自動カテゴリ化や推薦）
+   - プライバシー：送信するデータは最小化（メニュー名、最小メタ情報）。ユーザーに明示的同意を求めてから有効化。
+   - 実装案：ユーザーが自分のAPIキーを設定できるフロー（OpenAI等）
+
+データフロー（簡易）
+- ページ読み込み -> Content Script がメニューを抽出 -> Service Worker に現在ルールを問い合わせ -> Filter Engine がローカルで適用 -> Content Script が表示を更新
+- LLMを使う場合: 上記の前後に Service Worker が選択的に外部APIを呼ぶ -> 結果をキャッシュしてFilter Engineへ
+
+ファイル/モジュール構成（提案）
+- manifest.json
+- src/
+  - content/
+    - parser.ts        // ページ固有の抽出ロジック
+    - renderer.ts      // DOM更新(非破壊)
+    - index.ts         // content script entry
+  - background/
+    - serviceWorker.ts
+    - llmAdapter.ts
+    - storage.ts
+  - ui/
+    - popup.tsx
+    - options.tsx
+  - core/
+    - filterEngine.ts  // ルール実行ロジック
+    - rules.ts         // ルールモデルとシリアライズ
+  - types/
+    - menu.ts
+    - rule.ts
+  - assets/
+
+実装上の注意点
+- DOM 操作は非破壊で行い、サイトの JS と競合しないように `data-*` 属性や CSS クラスを用いる
+- ページ構造が変わる可能性が高いためパーサは柔軟に保ち、サイトごとのセレクタは設定可能にする
+- フィルタ評価は軽量化。大量の項目では Web Worker ではなく Service Worker 側でバッチ評価する設計を検討
+
+LLM連携案（必要なら）
+- 用途：メニューの意図解釈（例：「照り焼きチキン丼」→`肉, 高カロリー`）、ユーザー向け自然言語フィルタ変換（「辛いもの除外」→ルール生成）
+- アーキテクチャ：Service Worker が HTTPS 経由で外部エンドポイントに問い合わせ。ユーザーは自分のAPIキーを入力。
+- セキュリティ：送信データは明示的に制限／ログを最小化。設定で外部通信を無効化可能。
+
+テスト & QA
+- E2E: Puppeteer/Playwright で Nosh ページを読み込み、抽出→フィルタ→DOM変化を検証
+- 単体: `filterEngine` のルール適用ロジックをユニットテスト
+
+導入手順（最小実装）
+1. manifest + content script でメニュー抽出を実装
+2. ローカルルール（オプションUI無しでも）でフィルタ適用
+3. Popup/UI を追加してルール編集
+4. 必要に応じて LLM Adapter をオプションで実装
+
+次のステップ
+- このファイルをベースに `manifest.json` と `content parser` のプロトタイプを作成します。

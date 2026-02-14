@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Nosh メニューフィルター",
+  "version": "0.1.0",
+  "description": "Nosh のメニュー選択をプレミアムやボリュームメニューでフィルタリングする Chrome 拡張",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://nosh.jp/*"
+  ],
+  "action": {
+    "default_title": "Nosh メニューフィルター",
+    "default_popup": "src/ui/popup.html"
+  },
+  "background": {
+    "service_worker": "src/background/serviceWorker.ts"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://nosh.jp/*"],
+      "js": ["src/content/index.ts"],
+      "run_at": "document_end"
+    }
+  ],
+  "options_page": "src/ui/options.html",
+  "icons": {
+    "16": "src/assets/icon-16.png",
+    "48": "src/assets/icon-48.png",
+    "128": "src/assets/icon-128.png"
+  }
+}
